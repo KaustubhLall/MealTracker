@@ -1,0 +1,101 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+*.coverage
+.coverage.*
+.cache
+*.log
+*.sqlite3
+
+# If using SQLite, ignore database files
+db.sqlite3
+
+# Environment variables
+.env
+
+# Django migrations
+**/migrations/*
+
+# If you are using PostgreSQL, you can ignore the database dump file
+*.dump
+
+# Translations
+*.mo
+
+# Static and media files
+staticfiles/
+media/
+
+# Unit test / coverage reports
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+nosetests.xml
+coverage.xml
+*.coveragerc
+*.codecov.yml
+
+# PyCharm
+.idea/
+# Ignore sensitive or system-specific configuration files
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/user.xml
+
+# Ignore Python virtual environments
+venv/
+env/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*.swp
+*~
+.nfs*
+
+# IDEs and editors
+.project
+.idea/
+*.sublime-project
+*.sublime-workspace
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Coverage reports
+.coverage
+coverage/
+.coverage.*
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
