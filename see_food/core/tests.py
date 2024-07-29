@@ -62,6 +62,7 @@ class SeeFoodAPITest(APITestCase):
             "hunger_level": "High",
             "exercise": "None",
             "total_calories": "500",
+            "user": self.user.user_id
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
         print(f"Meal creation response data: {response.data}")
@@ -84,6 +85,7 @@ class SeeFoodAPITest(APITestCase):
             "hunger_level": "Moderate",
             "exercise": "Light",
             "total_calories": "700",
+            "user": self.user.user_id
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
         print(f"Meal creation response data: {response.data}")
@@ -138,6 +140,7 @@ class SeeFoodAPITest(APITestCase):
                 }
             ],
             "brand_preferences": {"Brand A": 2, "Brand B": 5},
+            "user": self.user.user_id
         }
         response = self.client.post(
             f"{self.historical_meal_url}add_historical_meal/",

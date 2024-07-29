@@ -24,7 +24,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def get_queryset(self):
-        return User.objects.filter(id=self.request.user.id)
+        return User.objects.filter(id=self.request.user.user_id)
 
 
 @api_view(["POST"])
@@ -77,9 +77,11 @@ class MealViewSet(viewsets.ModelViewSet):
         return Meal.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        data["user"] = request.user.user_id
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             logger.debug(f"Meal creation failed: {serializer.errors}")
@@ -135,9 +137,11 @@ class HistoricalMealViewSet(viewsets.ModelViewSet):
         return HistoricalMeal.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        data["user"] = request.user.user_id
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             logger.debug(f"Historical meal creation failed: {serializer.errors}")
