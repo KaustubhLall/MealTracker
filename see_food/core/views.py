@@ -1,10 +1,8 @@
 import logging
 
-from django.contrib.auth import authenticate
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.decorators import api_view
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -29,9 +27,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.filter(id=self.request.user.id)
 
 
-# views.py
-
-
 @api_view(["POST"])
 def register(request):
     serializer = UserSerializer(data=request.data)
@@ -39,8 +34,9 @@ def register(request):
         user = serializer.save()
         logger.debug(f"User registered with username: {user.username}")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    logger.debug(f"Registration failed: {serializer.errors}")
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        logger.debug(f"Registration failed: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
@@ -80,6 +76,15 @@ class MealViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Meal.objects.filter(user=self.request.user)
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            logger.debug(f"Meal creation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=["put"])
     def edit_meal(self, request, pk=None):
         meal = self.get_object()
@@ -87,7 +92,9 @@ class MealViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.debug(f"Meal update failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FoodComponentViewSet(viewsets.ModelViewSet):
@@ -96,6 +103,15 @@ class FoodComponentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return FoodComponent.objects.filter(meal__user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            logger.debug(f"Food component creation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["put"])
     def edit_food_component(self, request, pk=None):
@@ -106,7 +122,9 @@ class FoodComponentViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.debug(f"Food component update failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class HistoricalMealViewSet(viewsets.ModelViewSet):
@@ -116,13 +134,18 @@ class HistoricalMealViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return HistoricalMeal.objects.filter(user=self.request.user)
 
-    @action(detail=False, methods=["post"])
-    def add_historical_meal(self, request):
-        serializer = HistoricalMealSerializer(data=request.data)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.debug(f"Historical meal creation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
+    def add_historical_meal(self, request):
+        return self.create(request)
 
     @action(detail=False, methods=["get"])
     def list_historical_meals(self, request):
@@ -139,4 +162,6 @@ class HistoricalMealViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.debug(f"Historical meal update failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

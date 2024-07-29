@@ -14,6 +14,10 @@ class SeeFoodAPITest(APITestCase):
         self.historical_meal_url = reverse("historicalmeal-list")
         self.username_base = "testuser"
 
+        # Register and login a test user
+        self.test_register_and_login()
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token)
+
     def create_sequential_user(self):
         index = 0
         while True:
@@ -48,12 +52,9 @@ class SeeFoodAPITest(APITestCase):
         self.assertIn("access", tokens)
         self.assertIn("refresh", tokens)
         self.access_token = tokens["access"]
+        self.user = user
 
     def test_meal_management(self):
-        # Register and login user
-        self.test_register_and_login()
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token)
-
         # Create a new meal
         meal_data = {
             "meal_name": "Breakfast",
@@ -63,6 +64,7 @@ class SeeFoodAPITest(APITestCase):
             "total_calories": "500",
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
+        print(f"Meal creation response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         meal_id = response.data["meal_id"]
 
@@ -71,13 +73,10 @@ class SeeFoodAPITest(APITestCase):
         response = self.client.put(
             f"{self.meal_url}{meal_id}/edit_meal/", edit_meal_data, format="json"
         )
+        print(f"Meal update response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_food_component_management(self):
-        # Register and login user
-        self.test_register_and_login()
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token)
-
         # Create a new meal for the food component
         meal_data = {
             "meal_name": "Lunch",
@@ -87,6 +86,7 @@ class SeeFoodAPITest(APITestCase):
             "total_calories": "700",
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
+        print(f"Meal creation response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         meal_id = response.data["meal_id"]
 
@@ -106,6 +106,7 @@ class SeeFoodAPITest(APITestCase):
         response = self.client.post(
             self.food_component_url, food_component_data, format="json"
         )
+        print(f"Food component creation response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         component_id = response.data["component_id"]
 
@@ -116,13 +117,10 @@ class SeeFoodAPITest(APITestCase):
             edit_food_component_data,
             format="json",
         )
+        print(f"Food component update response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_historical_meal_management(self):
-        # Register and login user
-        self.test_register_and_login()
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token)
-
         # Add a historical meal
         historical_meal_data = {
             "meal_name": "Dinner",
@@ -146,6 +144,7 @@ class SeeFoodAPITest(APITestCase):
             historical_meal_data,
             format="json",
         )
+        print(f"Historical meal creation response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         historical_meal_id = response.data["historical_id"]
 
@@ -156,12 +155,14 @@ class SeeFoodAPITest(APITestCase):
             edit_historical_meal_data,
             format="json",
         )
+        print(f"Historical meal update response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # List historical meals
         response = self.client.get(
             f"{self.historical_meal_url}list_historical_meals/", format="json"
         )
+        print(f"List historical meals response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(len(response.data), 0)
 
