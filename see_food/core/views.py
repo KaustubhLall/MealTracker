@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from rest_framework import status, viewsets
@@ -16,6 +18,7 @@ from .serializers import (
 )
 
 User = get_user_model()
+logger = logging.getLogger("see_food")
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -26,12 +29,17 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.filter(id=self.request.user.id)
 
 
+# views.py
+
+
 @api_view(["POST"])
 def register(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
+        logger.debug(f"User registered with username: {user.username}")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    logger.debug(f"Registration failed: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -46,8 +54,10 @@ def login(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    logger.debug(f"Attempting to authenticate user: {username}")
     user = authenticate(username=username, password=password)
     if user:
+        logger.debug(f"User authenticated: {username}")
         refresh = RefreshToken.for_user(user)
         return Response(
             {
@@ -57,6 +67,7 @@ def login(request):
             status=status.HTTP_200_OK,
         )
 
+    logger.debug(f"Invalid credentials for user: {username}")
     return Response(
         {"error": "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED
     )
