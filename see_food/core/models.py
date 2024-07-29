@@ -1,15 +1,31 @@
-from django.db import models
-
-# Create your models here.
-from django.db import models
 import uuid
-import json
+
+from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.db import models
 
 
-class User(models.Model):
+class User(AbstractUser):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=255)
+    username = models.CharField(max_length=150, unique=True)  # Ensure unique usernames
+
+    groups = models.ManyToManyField(
+        Group,
+        related_name="custom_user_set",  # Add related_name to avoid conflict
+        blank=True,
+        help_text=(
+            "The groups this user belongs to. A user will get all permissions "
+            "granted to each of their groups."
+        ),
+        related_query_name="user",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="custom_user_set",  # Add related_name to avoid conflict
+        blank=True,
+        help_text="Specific permissions for this user.",
+        related_query_name="user",
+    )
 
 
 class Meal(models.Model):
@@ -42,6 +58,7 @@ class HistoricalMeal(models.Model):
     historical_id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False
     )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     meal_name = models.CharField(max_length=255)
     food_components = models.JSONField(default=list)
     brand_preferences = models.JSONField(default=dict)

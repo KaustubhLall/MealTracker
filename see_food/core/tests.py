@@ -1,13 +1,14 @@
-from django.test import TestCase
-
 # Create your tests here.
 
+import json
+
+from django.contrib.auth.hashers import make_password
 from django.urls import reverse
+from icecream import ic
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth.hashers import make_password
-from core.models import User, Meal, FoodComponent, HistoricalMeal
-import json
+
+from core.models import User, Meal
 
 
 class FoodTrackingAppE2ETests(APITestCase):
@@ -30,6 +31,7 @@ class FoodTrackingAppE2ETests(APITestCase):
             "/api/login/",
             {"email": "user@example.com", "password": "securepassword123"},
         )
+        ic(response)
         token = response.data["access"]  # Retrieve the access token
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + token)
 
