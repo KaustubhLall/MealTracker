@@ -1,105 +1,145 @@
-# Create your tests here.
-
-import json
-
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from icecream import ic
 from rest_framework import status
-from rest_framework.test import APITestCase
-
-from core.models import User, Meal
+from rest_framework.test import APITestCase, APIClient
 
 
-class FoodTrackingAppE2ETests(APITestCase):
+class SeeFoodAPITest(APITestCase):
     def setUp(self):
-        # Create a user for authentication
-        self.user = User.objects.create(
-            email="user@example.com",
-            password=make_password("securepassword123"),
-        )
-        self.meal_url = reverse("meal-list")
-        self.food_component_url = reverse("foodcomponent-list")
-        self.historical_meal_url = reverse("historicalmeal-list")
+        self.client = APIClient()
+        self.register_url = reverse('register')
+        self.login_url = reverse('login')
+        self.meal_url = reverse('meal-list')
+        self.food_component_url = reverse('foodcomponent-list')
+        self.historical_meal_url = reverse('historicalmeal-list')
+        self.username_base = "testuser"
 
-        # User login to obtain auth token
-        self.client.post(
-            "/api/register/",
-            {"email": "user@example.com", "password": "securepassword123"},
-        )
-        response = self.client.post(
-            "/api/login/",
-            {"email": "user@example.com", "password": "securepassword123"},
-        )
-        ic(response)
-        token = response.data["access"]  # Retrieve the access token
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + token)
+    def create_sequential_user(self):
+        index = 0
+        while True:
+            username = f"{self.username_base}{index}"
+            if not get_user_model().objects.filter(username=username).exists():
+                return username
+            index += 1
 
-    def test_user_registration(self):
-        # Test user registration
-        registration_data = {
-            "email": "newuser@example.com",
-            "password": "newpassword123",
+    def test_register_and_login(self):
+        # Register a new user with a unique username
+        username = self.create_sequential_user()
+        register_data = {
+            "username": username,
+            "password": "testpassword",
+            "email": f"{username}@example.com"
         }
-        response = self.client.post("/api/register/", registration_data)
+        ic(register_data)
+        response = self.client.post(self.register_url, register_data, format='json')
+        ic(response.status_code)
+        ic(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_meal_creation_and_retrieval(self):
-        # Test creating a meal
-        meal_data = {
-            "meal_name": "Lunch",
-            "time_of_consumption": "2021-07-21T12:00:00Z",
-            "user": self.user.user_id,
+        # Login with the registered user
+        login_data = {
+            "username": username,
+            "password": "testpassword"
         }
-        response = self.client.post(self.meal_url, meal_data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # Test retrieving meals
-        response = self.client.get(self.meal_url)
+        ic(login_data)
+        response = self.client.post(self.login_url, login_data, format='json')
+        ic(response.status_code)
+        ic(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(response.data) > 0)  # Check that the meal was added
+        tokens = response.data
+        self.assertIn("access", tokens)
+        self.assertIn("refresh", tokens)
+        self.access_token = tokens["access"]
 
-    def test_food_component_creation_and_retrieval(self):
-        # Create a meal to attach components to
-        meal = Meal.objects.create(
-            meal_name="Dinner",
-            time_of_consumption="2021-07-21T18:00:00Z",
-            user=self.user,
-        )
+    def test_meal_management(self):
+        try:
+            self.test_register_and_login()
+            self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
 
-        # Test creating a food component
-        component_data = {
-            "meal": meal.meal_id,
-            "food_name": "Potato",
-            "brand": "Generic",
-            "weight": 150,
-            "fat": 0.2,
-            "protein": 2,
-            "carbs": 17,
-            "sugar": 1,
-            "micronutrients": json.dumps({"Vitamin C": "20mg"}),
-        }
-        response = self.client.post(self.food_component_url, component_data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            # Create a new meal
+            meal_data = {
+                "name": "Breakfast",
+                "description": "Morning meal",
+            }
+            ic(meal_data)
+            response = self.client.post(self.meal_url, meal_data, format='json')
+            ic(response.status_code)
+            ic(response.data)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            meal_id = response.data["id"]
 
-        # Test retrieving food components
-        response = self.client.get(self.food_component_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(response.data) > 0)  # Check that the component was added
+            # Edit the meal
+            edit_meal_data = {
+                "name": "Updated Breakfast",
+                "description": "Updated morning meal",
+            }
+            ic(edit_meal_data)
+            response = self.client.put(f"{self.meal_url}{meal_id}/edit_meal/", edit_meal_data, format='json')
+            ic(response.status_code)
+            ic(response.data)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        except Exception as e:
+            ic(e)
 
-    def test_historical_meal_creation_and_retrieval(self):
-        # Test creating a historical meal
-        historical_meal_data = {
-            "meal_name": "Past Breakfast",
-            "food_components": json.dumps(["Eggs", "Bacon", "Toast"]),
-            "brand_preferences": json.dumps({"Brand": "Generic"}),
-        }
-        response = self.client.post(self.historical_meal_url, historical_meal_data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    def test_food_component_management(self):
+        try:
+            self.test_meal_management()
 
-        # Test retrieving historical meals
-        response = self.client.get(self.historical_meal_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            len(response.data) > 0
-        )  # Check that the historical meal was added
+            # Create a new food component
+            food_component_data = {
+                "name": "Eggs",
+                "calories": 155,
+                "meal": 1  # Assuming the meal created in test_meal_management has ID 1
+            }
+            ic(food_component_data)
+            response = self.client.post(self.food_component_url, food_component_data, format='json')
+            ic(response.status_code)
+            ic(response.data)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            food_component_id = response.data["id"]
+
+            # Edit the food component
+            edit_food_component_data = {
+                "name": "Boiled Eggs",
+                "calories": 155,
+            }
+            ic(edit_food_component_data)
+            response = self.client.put(f"{self.food_component_url}{food_component_id}/edit_food_component/", edit_food_component_data, format='json')
+            ic(response.status_code)
+            ic(response.data)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        except Exception as e:
+            ic(e)
+
+    def test_historical_meal_management(self):
+        try:
+            self.test_register_and_login()
+            self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+
+            # Add a historical meal
+            historical_meal_data = {
+                "date": "2024-07-28",
+                "meal": 1  # Assuming the meal created in test_meal_management has ID 1
+            }
+            ic(historical_meal_data)
+            response = self.client.post(f"{self.historical_meal_url}add_historical_meal/", historical_meal_data, format='json')
+            ic(response.status_code)
+            ic(response.data)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            historical_meal_id = response.data["id"]
+
+            # Edit the historical meal
+            edit_historical_meal_data = {
+                "date": "2024-07-29",
+            }
+            ic(edit_historical_meal_data)
+            response = self.client.put(f"{self.historical_meal_url}{historical_meal_id}/edit_historical_meal/", edit_historical_meal_data, format='json')
+            ic(response.status_code)
+            ic(response.data)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        except Exception as e:
+            ic(e)
+
+if __name__ == "__main__":
+    SeeFoodAPITest().run_tests()

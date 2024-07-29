@@ -7,11 +7,11 @@ from django.db import models
 class User(AbstractUser):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True)  # Ensure unique usernames
+    username = models.CharField(max_length=150, unique=True)
 
     groups = models.ManyToManyField(
         Group,
-        related_name="custom_user_set",  # Add related_name to avoid conflict
+        related_name="custom_user_set",
         blank=True,
         help_text=(
             "The groups this user belongs to. A user will get all permissions "
@@ -21,7 +21,7 @@ class User(AbstractUser):
     )
     user_permissions = models.ManyToManyField(
         Permission,
-        related_name="custom_user_set",  # Add related_name to avoid conflict
+        related_name="custom_user_set",
         blank=True,
         help_text="Specific permissions for this user.",
         related_query_name="user",
