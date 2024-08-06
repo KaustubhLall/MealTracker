@@ -27,6 +27,9 @@ class User(AbstractUser):
         related_query_name="user",
     )
 
+    def __str__(self):
+        return self.username
+
 
 class Meal(models.Model):
     meal_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -42,7 +45,6 @@ class Meal(models.Model):
     total_sugar = models.FloatField(blank=True, default=0.0)
 
     def recalculate_macros(self):
-        # Calculate total macros for the meal
         components = self.foodcomponent_set.all()
         self.total_calories = sum(component.total_calories for component in components)
         self.total_fat = sum(component.fat for component in components)
@@ -50,6 +52,9 @@ class Meal(models.Model):
         self.total_carbs = sum(component.carbs for component in components)
         self.total_sugar = sum(component.sugar for component in components)
         self.save()
+
+    def __str__(self):
+        return f"{self.meal_name} for {self.user.username} at {self.time_of_consumption}"
 
 
 class FoodComponent(models.Model):
@@ -66,10 +71,14 @@ class FoodComponent(models.Model):
     sugar = models.FloatField()
     micronutrients = models.JSONField(default=dict)
     total_calories = models.FloatField()
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Recalculate macros for the associated meal if a food component is updated
         self.meal.recalculate_macros()
+
+    def __str__(self):
+        return f"{self.food_name} ({self.brand})"
+
 
 class HistoricalMeal(models.Model):
     historical_id = models.UUIDField(
@@ -80,13 +89,18 @@ class HistoricalMeal(models.Model):
     food_components = models.JSONField(default=list)
     brand_preferences = models.JSONField(default=dict)
 
+    def __str__(self):
+        return f"Historical {self.meal_name} for {self.user.username}"
+
+
 class UserGoals(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='goals')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="goals")
     fat_goal = models.IntegerField(default=0)
     carb_goal = models.IntegerField(default=0)
     protein_goal = models.IntegerField(default=0)
     calorie_goal = models.IntegerField(default=0)
     weight_goal = models.IntegerField(default=0)
+    summary = models.TextField(blank=True, default="")
 
     def __str__(self):
         return f"{self.user.username}'s goals"
