@@ -35,7 +35,21 @@ class Meal(models.Model):
     time_of_consumption = models.DateTimeField()
     hunger_level = models.CharField(max_length=255, blank=True)
     exercise = models.CharField(max_length=255, blank=True)
-    total_calories = models.CharField(max_length=255, blank=True)
+    total_calories = models.FloatField(blank=True, default=0.0)
+    total_fat = models.FloatField(blank=True, default=0.0)
+    total_protein = models.FloatField(blank=True, default=0.0)
+    total_carbs = models.FloatField(blank=True, default=0.0)
+    total_sugar = models.FloatField(blank=True, default=0.0)
+
+    def recalculate_macros(self):
+        # Calculate total macros for the meal
+        components = self.foodcomponent_set.all()
+        self.total_calories = sum(component.total_calories for component in components)
+        self.total_fat = sum(component.fat for component in components)
+        self.total_protein = sum(component.protein for component in components)
+        self.total_carbs = sum(component.carbs for component in components)
+        self.total_sugar = sum(component.sugar for component in components)
+        self.save()
 
 
 class FoodComponent(models.Model):
@@ -52,7 +66,10 @@ class FoodComponent(models.Model):
     sugar = models.FloatField()
     micronutrients = models.JSONField(default=dict)
     total_calories = models.FloatField()
-
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Recalculate macros for the associated meal if a food component is updated
+        self.meal.recalculate_macros()
 
 class HistoricalMeal(models.Model):
     historical_id = models.UUIDField(

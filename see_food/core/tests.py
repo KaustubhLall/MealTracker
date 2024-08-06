@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
-from core.models import UserGoals
+from core.models import UserGoals, Meal
 
 
 class SeeFoodAPITest(APITestCase):
@@ -81,17 +81,16 @@ class SeeFoodAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_food_component_management(self):
-        # Create a new meal for the food component
+        # Create a new meal
         meal_data = {
             "meal_name": "Lunch",
             "time_of_consumption": "2024-07-29T13:00:00Z",
             "hunger_level": "Moderate",
             "exercise": "Light",
-            "total_calories": "700",
+            "total_calories": "0",
             "user": self.user.user_id,
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
-        print(f"Meal creation response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         meal_id = response.data["meal_id"]
 
@@ -111,19 +110,41 @@ class SeeFoodAPITest(APITestCase):
         response = self.client.post(
             self.food_component_url, food_component_data, format="json"
         )
-        print(f"Food component creation response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        component_id = response.data["component_id"]
+
+        # Check recalculated meal macros
+        meal = Meal.objects.get(meal_id=meal_id)
+        self.assertEqual(meal.total_calories, 200)
+        self.assertEqual(meal.total_fat, 10)
+        self.assertEqual(meal.total_protein, 30)
+        self.assertEqual(meal.total_carbs, 0)
+        self.assertEqual(meal.total_sugar, 0)
 
         # Edit the food component
-        edit_food_component_data = {"food_name": "Grilled Chicken", "weight": 250}
+        component_id = response.data["component_id"]
+        edit_food_component_data = {
+            "food_name": "Grilled Chicken",
+            "weight": 250,
+            "fat": 12,
+            "protein": 32,
+            "carbs": 5,
+            "sugar": 1,
+            "total_calories": 250,
+        }
         response = self.client.put(
             f"{self.food_component_url}{component_id}/edit_food_component/",
             edit_food_component_data,
             format="json",
         )
-        print(f"Food component update response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check recalculated meal macros after update
+        meal.refresh_from_db()
+        self.assertEqual(meal.total_calories, 250)
+        self.assertEqual(meal.total_fat, 12)
+        self.assertEqual(meal.total_protein, 32)
+        self.assertEqual(meal.total_carbs, 5)
+        self.assertEqual(meal.total_sugar, 1)
 
     def test_historical_meal_management(self):
         # Add a historical meal
@@ -205,6 +226,7 @@ class SeeFoodAPITest(APITestCase):
         # Assuming parsing logic will change values appropriately
         self.assertEqual(response.data["carb_goal"], 42)
         self.assertEqual(response.data["protein_goal"], 42)
+
 
 if __name__ == "__main__":
     SeeFoodAPITest().run_tests()

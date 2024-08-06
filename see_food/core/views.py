@@ -112,7 +112,8 @@ class FoodComponentViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            food_component = serializer.save()
+            food_component.meal.recalculate_macros()  # Recalculate macros
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             logger.debug(f"Food component creation failed: {serializer.errors}")
@@ -125,7 +126,8 @@ class FoodComponentViewSet(viewsets.ModelViewSet):
             food_component, data=request.data, partial=True
         )
         if serializer.is_valid():
-            serializer.save()
+            food_component = serializer.save()
+            food_component.meal.recalculate_macros()  # Recalculate macros
             return Response(serializer.data)
         else:
             logger.debug(f"Food component update failed: {serializer.errors}")
@@ -186,7 +188,7 @@ class UserGoalsViewSet(viewsets.ModelViewSet):
         # Parse the goals using a placeholder method
         goals_data = self.parse_goals(request.data.get("goals_input", ""))
         # Attach the current user to the parsed goals data
-        goals_data['user'] = request.user.user_id
+        goals_data["user"] = request.user.user_id
 
         # Serialize the data and save it
         serializer = self.get_serializer(data=goals_data)
@@ -202,12 +204,12 @@ class UserGoalsViewSet(viewsets.ModelViewSet):
             "carb_goal": 42,
             "protein_goal": 42,
             "calorie_goal": 42,
-            "weight_goal": 42
+            "weight_goal": 42,
         }
 
     def update(self, request, *args, **kwargs):
         # Use update for changing existing goals
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
         goals_data = self.parse_goals(request.data.get("goals_input", ""))
         serializer = self.get_serializer(instance, data=goals_data, partial=partial)
@@ -215,4 +217,3 @@ class UserGoalsViewSet(viewsets.ModelViewSet):
             self.perform_update(serializer)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
