@@ -33,15 +33,17 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class MealSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Meal
-        fields = "__all__"
-
-
 class FoodComponentSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodComponent
+        fields = "__all__"
+
+
+class MealSerializer(serializers.ModelSerializer):
+    food_components = FoodComponentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Meal
         fields = "__all__"
 
 
@@ -60,5 +62,5 @@ class UserGoalsSerializer(serializers.ModelSerializer):
             "protein_goal",
             "calorie_goal",
             "weight_goal",
-            'summary'
+            "summary",
         ]
