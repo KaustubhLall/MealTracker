@@ -9,6 +9,7 @@ from core.views import (
     HistoricalMealViewSet,
     register,
     login,
+    UserGoalsViewSet,
 )
 
 router = DefaultRouter()
@@ -16,6 +17,7 @@ router.register(r"users", UserViewSet, basename="user")
 router.register(r"meals", MealViewSet, basename="meal")
 router.register(r"foodcomponents", FoodComponentViewSet, basename="foodcomponent")
 router.register(r"historicalmeals", HistoricalMealViewSet, basename="historicalmeal")
+router.register(r"usergoals", UserGoalsViewSet, basename="user-goals")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

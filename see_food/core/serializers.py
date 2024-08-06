@@ -2,7 +2,7 @@ import logging
 
 from rest_framework import serializers
 
-from .models import User, Meal, FoodComponent, HistoricalMeal
+from .models import User, Meal, FoodComponent, HistoricalMeal, UserGoals
 
 logger = logging.getLogger("see_food")
 
@@ -49,3 +49,15 @@ class HistoricalMealSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistoricalMeal
         fields = "__all__"
+
+
+class UserGoalsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserGoals
+        fields = [
+            "fat_goal",
+            "carb_goal",
+            "protein_goal",
+            "calorie_goal",
+            "weight_goal",
+        ]
