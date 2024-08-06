@@ -57,6 +57,8 @@ class UserGoalsSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserGoals
         fields = [
+            "id",
+            "user",
             "fat_goal",
             "carb_goal",
             "protein_goal",
@@ -64,3 +66,5 @@ class UserGoalsSerializer(serializers.ModelSerializer):
             "weight_goal",
             "summary",
         ]
+        extra_kwargs = {"user": {"read_only": True}}
+
