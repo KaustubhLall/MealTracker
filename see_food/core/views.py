@@ -247,7 +247,9 @@ class UserGoalsViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__}.{self.create.__name__}: Creating user goals.")
-        goals_data = self.parse_goals(request.data.get("goals_input", ""))
+        goals_input = request.data.get("goals_input", "")
+        goals_data = self.parse_goals(goals_input, self.request.user.goals.summary if hasattr(self.request.user, 'goals') else "")
+
         goals_data["user"] = request.user.user_id
 
         serializer = self.get_serializer(data=goals_data)
@@ -264,21 +266,13 @@ class UserGoalsViewSet(viewsets.ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    def parse_goals(self, input_text):
-        logger.debug(f"{self.__class__.__name__}.{self.parse_goals.__name__}: Parsing goals input.")
-        return {
-            "fat_goal": 42,
-            "carb_goal": 42,
-            "protein_goal": 42,
-            "calorie_goal": 42,
-            "weight_goal": 42,
-        }
-
     def update(self, request, *args, **kwargs):
         logger.debug(f"{self.__class__.__name__}.{self.update.__name__}: Updating user goals.")
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
-        goals_data = self.parse_goals(request.data.get("goals_input", ""))
+        goals_input = request.data.get("goals_input", "")
+        goals_data = self.parse_goals(goals_input, instance.summary)
+
         serializer = self.get_serializer(instance, data=goals_data, partial=partial)
         if serializer.is_valid():
             self.perform_update(serializer)
@@ -292,3 +286,15 @@ class UserGoalsViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    def parse_goals(self, input_text, current_summary):
+        logger.debug(f"{self.__class__.__name__}.{self.parse_goals.__name__}: Parsing goals input.")
+        new_summary = current_summary + " " + input_text if current_summary else input_text
+        return {
+            "summary": new_summary,
+            "fat_goal": 42,
+            "carb_goal": 42,
+            "protein_goal": 42,
+            "calorie_goal": 42,
+            "weight_goal": 42,
+        }

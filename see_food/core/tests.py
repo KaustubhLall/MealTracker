@@ -201,6 +201,11 @@ class SeeFoodAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["fat_goal"], 42)
 
+        # Check if summary includes the input
+        self.assertIn(
+            "I want to reduce carbs and increase protein", response.data["summary"]
+        )
+
     def test_get_user_goals(self):
         # Ensure user goals are created first
         self.test_create_user_goals()
@@ -223,6 +228,15 @@ class SeeFoodAPITest(APITestCase):
         )
         print(f"User goals update response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if summary includes the new input
+        self.assertIn(
+            "I want to reduce carbs and increase protein", response.data["summary"]
+        )
+        self.assertIn(
+            "I want to increase carbs and reduce protein", response.data["summary"]
+        )
+
         # Assuming parsing logic will change values appropriately
         self.assertEqual(response.data["carb_goal"], 42)
         self.assertEqual(response.data["protein_goal"], 42)
