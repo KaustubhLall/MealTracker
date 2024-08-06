@@ -66,10 +66,12 @@ class FoodComponent(models.Model):
     sugar = models.FloatField()
     micronutrients = models.JSONField(default=dict)
     total_calories = models.FloatField()
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Recalculate macros for the associated meal if a food component is updated
         self.meal.recalculate_macros()
+
 
 class HistoricalMeal(models.Model):
     historical_id = models.UUIDField(
@@ -80,8 +82,9 @@ class HistoricalMeal(models.Model):
     food_components = models.JSONField(default=list)
     brand_preferences = models.JSONField(default=dict)
 
+
 class UserGoals(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='goals')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="goals")
     fat_goal = models.IntegerField(default=0)
     carb_goal = models.IntegerField(default=0)
     protein_goal = models.IntegerField(default=0)
