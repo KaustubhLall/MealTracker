@@ -62,3 +62,14 @@ class HistoricalMeal(models.Model):
     meal_name = models.CharField(max_length=255)
     food_components = models.JSONField(default=list)
     brand_preferences = models.JSONField(default=dict)
+
+class UserGoals(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='goals')
+    fat_goal = models.IntegerField(default=0)
+    carb_goal = models.IntegerField(default=0)
+    protein_goal = models.IntegerField(default=0)
+    calorie_goal = models.IntegerField(default=0)
+    weight_goal = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username}'s goals"

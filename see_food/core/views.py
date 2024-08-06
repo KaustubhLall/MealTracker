@@ -1,13 +1,16 @@
 import logging
 
 from django.contrib.auth import authenticate, get_user_model
-from rest_framework import status, viewsets
+from rest_framework import status
+from rest_framework import viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Meal, FoodComponent, HistoricalMeal
+from .models import UserGoals
+from .serializers import UserGoalsSerializer
 from .serializers import (
     UserSerializer,
     MealSerializer,
@@ -169,3 +172,47 @@ class HistoricalMealViewSet(viewsets.ModelViewSet):
         else:
             logger.debug(f"Historical meal update failed: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserGoalsViewSet(viewsets.ModelViewSet):
+    serializer_class = UserGoalsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Ensure only the authenticated user's goals are returned
+        return UserGoals.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        # Parse the goals using a placeholder method
+        goals_data = self.parse_goals(request.data.get("goals_input", ""))
+        # Attach the current user to the parsed goals data
+        goals_data['user'] = request.user.user_id
+
+        # Serialize the data and save it
+        serializer = self.get_serializer(data=goals_data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)  # Ensure user is saved
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def parse_goals(self, input_text):
+        # Placeholder function to mimic goal parsing
+        return {
+            "fat_goal": 42,
+            "carb_goal": 42,
+            "protein_goal": 42,
+            "calorie_goal": 42,
+            "weight_goal": 42
+        }
+
+    def update(self, request, *args, **kwargs):
+        # Use update for changing existing goals
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        goals_data = self.parse_goals(request.data.get("goals_input", ""))
+        serializer = self.get_serializer(instance, data=goals_data, partial=partial)
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

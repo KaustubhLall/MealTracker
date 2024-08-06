@@ -3,6 +3,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
+from core.models import UserGoals
+
 
 class SeeFoodAPITest(APITestCase):
     def setUp(self):
@@ -12,6 +14,7 @@ class SeeFoodAPITest(APITestCase):
         self.meal_url = reverse("meal-list")
         self.food_component_url = reverse("foodcomponent-list")
         self.historical_meal_url = reverse("historicalmeal-list")
+        self.goals_url = reverse("user-goals-list")
         self.username_base = "testuser"
 
         # Register and login a test user
@@ -62,7 +65,7 @@ class SeeFoodAPITest(APITestCase):
             "hunger_level": "High",
             "exercise": "None",
             "total_calories": "500",
-            "user": self.user.user_id
+            "user": self.user.user_id,
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
         print(f"Meal creation response data: {response.data}")
@@ -85,7 +88,7 @@ class SeeFoodAPITest(APITestCase):
             "hunger_level": "Moderate",
             "exercise": "Light",
             "total_calories": "700",
-            "user": self.user.user_id
+            "user": self.user.user_id,
         }
         response = self.client.post(self.meal_url, meal_data, format="json")
         print(f"Meal creation response data: {response.data}")
@@ -140,7 +143,7 @@ class SeeFoodAPITest(APITestCase):
                 }
             ],
             "brand_preferences": {"Brand A": 2, "Brand B": 5},
-            "user": self.user.user_id
+            "user": self.user.user_id,
         }
         response = self.client.post(
             f"{self.historical_meal_url}add_historical_meal/",
@@ -169,6 +172,39 @@ class SeeFoodAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(len(response.data), 0)
 
+    def test_create_user_goals(self):
+        # Test creating user goals
+        data = {"goals_input": "I want to reduce carbs and increase protein"}
+        response = self.client.post(self.goals_url, data, format="json")
+        print(f"User goals creation response data: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["fat_goal"], 42)
+
+    def test_get_user_goals(self):
+        # Ensure user goals are created first
+        self.test_create_user_goals()
+
+        # Retrieve the user goals
+        response = self.client.get(self.goals_url, format="json")
+        print(f"User goals retrieval response data: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("fat_goal", response.data[0])
+
+    def test_update_user_goals(self):
+        # Ensure user goals are created first
+        self.test_create_user_goals()
+
+        # Update the user goals
+        new_goals_input = {"goals_input": "I want to increase carbs and reduce protein"}
+        user_goals_id = UserGoals.objects.get(user=self.user).id
+        response = self.client.put(
+            f"{self.goals_url}{user_goals_id}/", new_goals_input, format="json"
+        )
+        print(f"User goals update response data: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Assuming parsing logic will change values appropriately
+        self.assertEqual(response.data["carb_goal"], 42)
+        self.assertEqual(response.data["protein_goal"], 42)
 
 if __name__ == "__main__":
     SeeFoodAPITest().run_tests()
