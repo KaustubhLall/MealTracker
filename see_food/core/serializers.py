@@ -60,4 +60,5 @@ class UserGoalsSerializer(serializers.ModelSerializer):
             "protein_goal",
             "calorie_goal",
             "weight_goal",
+            'summary'
         ]

@@ -21,6 +21,7 @@ const LoginComponent = ({ onLogin }) => {
             navigate('/dashboard'); // Redirect to the dashboard on successful login
         } catch (err) {
             setError('Invalid credentials');
+            console.error('Login failed:', err);
         }
     };
 

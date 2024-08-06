@@ -17,6 +17,7 @@ const RegisterComponent = () => {
             setError('');
         } catch (err) {
             setError('Registration failed');
+            console.error('Registration error:', err);
         }
     };
 
